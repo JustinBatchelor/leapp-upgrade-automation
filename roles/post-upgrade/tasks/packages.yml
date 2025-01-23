@@ -6,12 +6,12 @@
     state: latest
     update_only: true
 
-- name: Remove lscfg-cme package
+- name: Remove packages defined by remove_packages variable
   ansible.builtin.dnf:
     name: "{{ remove_packages }}"
     state: absent
 
-- name: Install packages post-upgrade
+- name: Install packages post-upgrade defined by install_packages variable
   ansible.builtin.dnf:
     name: "{{ install_packages }}"
     state: present

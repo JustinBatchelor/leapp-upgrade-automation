@@ -1,0 +1,17 @@
+---
+# Run `dnf update` on host to update all packages
+- name: Update all packages
+  ansible.builtin.dnf:
+    name: '*'
+    state: latest
+    update_only: true
+
+- name: Remove lscfg-cme package
+  ansible.builtin.dnf:
+    name: "{{ remove_packages }}"
+    state: absent
+
+- name: Install packages post-upgrade
+  ansible.builtin.dnf:
+    name: "{{ install_packages }}"
+    state: present

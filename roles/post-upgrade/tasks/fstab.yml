@@ -1,0 +1,19 @@
+---
+- name: Stat for {{ fstab_backup_path }}
+  ansible.builtin.stat:
+    path: "{{ fstab_backup_path }}"
+  register: fstab_backup
+
+- name: Restore fstab
+  ansible.builtin.copy:
+    src: "{{ fstab_backup_path }}"
+    dest: /etc/fstab
+    remote_src: true
+    mode: preserve
+  when: fstab_backup.stat.exists
+
+- name: Remove backup after restore
+  ansible.builtin.file:
+    path: "{{ fstab_backup_path }}"
+    state: absent
+  when: fstab_backup.stat.exists

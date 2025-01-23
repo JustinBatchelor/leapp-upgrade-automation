@@ -1,0 +1,10 @@
+# inventory group to specify the hosts for the upgrade playbook
+[upgrade]
+
+[upgrade:children]
+
+# inventory group to specify the hosts for the analysis playbook
+[analysis]
+
+[analysis:children]
+upgrade

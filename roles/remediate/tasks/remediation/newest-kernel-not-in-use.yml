@@ -1,0 +1,37 @@
+---
+- name: leapp-newest-kernel-not-in-use | Set leapp-entry if leapp-report contains this inhibitor
+  ansible.builtin.set_fact:
+    leapp_entry: "{{ item }}"
+  loop: "{{ leapp_report_json.entries }}"
+  when: item.key == entry_key
+
+- block:
+    - name: leapp-newest-kernel-not-in-use | Get list of installed kernel packages sorted by the newest version
+      ansible.builtin.shell: |
+        rpm -q kernel --queryformat '%{version}-%{release}.%{arch}\n' | sort -Vr
+      register: installed_kernels
+      changed_when: true
+
+    - name: leapp-newest-kernel-not-in-use | Set default kernel to latest
+      ansible.builtin.command: grubby --set-default /boot/vmlinuz-{{ installed_kernels.stdout_lines[0] }}
+      register: set_default_kernel
+      changed_when: set_default_kernel.rc == 0
+
+    - name: leapp-newest-kernel-not-in-use | Update-and-reboot | Reboot when updates applied
+      ansible.builtin.reboot:
+        reboot_timeout: "{{ reboot_timeout }}"
+        post_reboot_delay: "{{ post_reboot_delay }}"
+        timeout: "{{ reboot_timeout }}"
+
+    - name: leapp-newest-kernel-not-in-use | Remove old kernels
+      ansible.builtin.yum:
+        name: kernel-{{ item }}
+        state: absent
+      loop: "{{ installed_kernels.stdout_lines[1:] }}"
+
+### TODO ###
+# Add logic here to ensure that the latest kernel is in use.
+  when:
+    - leapp_entry is defined
+    - leapp_entry.key == entry_key
+    - ansible_fqdn == leapp_entry.hostname

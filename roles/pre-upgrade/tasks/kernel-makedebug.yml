@@ -1,0 +1,16 @@
+---
+- name: Check if /etc/sysconfig/kernel exists
+  ansible.builtin.stat:
+    path: /etc/sysconfig/kernel
+  register: kernel_file
+
+# Set MAKEDEBUG when kernel file exists
+- name: Ensure that MAKEDEBUG kernel setting is set to no
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/kernel
+    search_string: "MAKEDEBUG=yes"
+    line: "MAKEDEBUG=no"
+    owner: root
+    group: root
+    mode: '0644'
+  when: kernel_file.stat.exists

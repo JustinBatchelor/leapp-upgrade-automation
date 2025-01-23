@@ -1,0 +1,5 @@
+---
+# vars file for roles/post-upgrade
+remove_packages: []
+
+install_packages: []

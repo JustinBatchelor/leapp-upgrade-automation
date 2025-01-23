@@ -1,0 +1,52 @@
+---
+- name: Play to upgrade RHEL7 hosts to RHEL8
+  hosts: "{{ inventory_host_group | default('upgrade') }}"
+  strategy: free
+  become: true
+  force_handlers: true
+  vars_files:
+    - "../../variables/infra-leapp.yml"
+
+  tasks:
+    - name: Set fact to represent OS version | {{ ansible_facts.hostname }}
+      ansible.builtin.set_fact:
+        upgrade: "{{ ansible_facts.distribution == 'RedHat' and ansible_facts.distribution_version == '7.9' and crq_file.stat.exists and not opt_out_file.stat.exists }}"
+
+    - name: Include role to configure preflight-checks | {{ ansible_facts.hostname }}
+      ansible.builtin.include_role:
+        name: roles/preflight-checks
+      when: upgrade
+
+    - name: Generate preupgrade analysis report | {{ ansible_facts.hostname }}
+      ansible.builtin.import_role:
+        name: infra.leapp.analysis
+      when: upgrade
+
+    - name: Flush handlers from analysis report | {{ ansible_facts.hostname }}
+      ansible.builtin.meta: flush_handlers
+      when: upgrade
+
+    - name: Include role to remediate inhibitors | {{ ansible_facts.hostname }}
+      ansible.builtin.include_role:
+        name: roles/remediate
+      when: upgrade
+
+    - name: Perform OS upgrade | {{ ansible_facts.hostname }}
+      ansible.builtin.import_role:
+        name: infra.leapp.upgrade
+      when: upgrade
+
+    - name: Refresh Ansible Facts after the upgrade | {{ ansible_facts.hostname }}
+      ansible.builtin.setup:
+      when: upgrade
+
+    # Task to set a boolean based on the OS version post-upgrade
+    - name: Set fact to represent OS version | {{ ansible_facts.hostname }}
+      ansible.builtin.set_fact:
+        upgrade: "{{ ansible_facts.distribution == 'RedHat' and ansible_facts.distribution_version == '8.10' and crq_file.stat.exists }}"
+
+    # Role that will configure the host post-upgrade
+    - name: Perform post Leapp OS upgrade tasks | {{ ansible_facts.hostname }}
+      ansible.builtin.include_role:
+        name: roles/post-upgrade
+      when: upgrade

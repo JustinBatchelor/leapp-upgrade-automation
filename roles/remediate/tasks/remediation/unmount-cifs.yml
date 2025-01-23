@@ -1,0 +1,55 @@
+---
+- name: leapp-unmount-cifs-shares | Set leapp-entry if leapp-report contains this inhibitor
+  ansible.builtin.set_fact:
+    leapp_entry: "{{ item }}"
+  loop: "{{ leapp_report_json.entries }}"
+  when: item.key == entry_key
+
+- block:
+    # Gives us a list of CIFS mounts unique to this host, and will be used with the ansible.posix.mount module to unmount CIFS mounts
+    - name: Find all CIFS mounts
+      ansible.builtin.set_fact:
+        cifs_mounts: "{{ ansible_mounts | default([]) | selectattr('fstype', 'in', ['cifs']) | list }}"
+
+    # Check to see if /etc/fstab was already backed up
+    - name: Stat for {{ fstab_backup_path }}
+      ansible.builtin.stat:
+        path: "{{ fstab_backup_path }}"
+      register: nfs_fstab_backup
+
+    # Create a backup of /etc/fstab if one does not already exist
+    - name: Backup /etc/fstab
+      ansible.builtin.copy:
+        src: "/etc/fstab"
+        dest: "{{ fstab_backup_path }}"
+        remote_src: true
+        mode: preserve
+      when: not nfs_fstab_backup.stat.exists
+
+    - name: Read /etc/fstab content
+      ansible.builtin.slurp:
+        path: /etc/fstab
+      register: fstab_content
+
+    # Returns a list of all valid CIFS entries in /etc/fstab, excludes any commented-out lines
+    - name: Decode and parse CIFS entries from /etc/fstab
+      ansible.builtin.set_fact:
+        cifs_entries: "{{ fstab_content.content | b64decode | split('\n') | select('search', 'cifs') | reject('search', '#') | list }}"
+
+    - name: Comment out CIFS entries in /etc/fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: "^{{ item | regex_escape }}"
+        line: "#{{ item }}"
+      loop: "{{ cifs_entries }}"
+
+    # Task to unmount all active mounts defined in cifs_mounts
+    - name: Unmount all mounts defined in cifs_mounts
+      ansible.posix.mount:
+        path: "{{ item['mount'] }}"
+        state: unmounted
+      loop: "{{ cifs_mounts }}"
+  when:
+    - leapp_entry is defined
+    - leapp_entry.key == entry_key
+    - ansible_fqdn == leapp_entry.hostname

@@ -1,0 +1,52 @@
+---
+# tasks file for roles/remediate
+- name: Include pre-upgrade role before running remediation tasks
+  ansible.builtin.include_role:
+    name: roles/pre-upgrade
+
+### PLACE ALL SUPPORTED REMEDIATION LOGIC BELOW ###
+
+- name: permit-root-login | Configure PermitRootLogin directive in sshd_config
+  ansible.builtin.include_tasks: remediation/permit-root-login.yml
+  vars:
+    entry_key: 3d21eb9cc1e9cd96e6a4294e771615787299515f
+
+- name: newest-kernel-not-in-use | Boot to latest kernel
+  ansible.builtin.include_tasks: remediation/newest-kernel-not-in-use.yml
+  vars:
+    entry_key: ebba7acfa54d3fa3abc927ba510ebde9ed1d17
+
+- name: multiple-kernel-devels-installed | Remove kernel-devel packages not in use
+  ansible.builtin.include_tasks: remediation/multiple-kernel-devels-installed.yml
+  vars:
+    entry_key: 8ceea81afbdb1a3297db82ca7212b1509e5b256
+
+- name: multiple-kernel-debug-installed | Remove kernel-debug packages not in use
+  ansible.builtin.include_tasks: remediation/multiple-kernel-debug-installed.yml
+  vars:
+    entry_key: 209e4a1aa6932622fcfbb6e9a132deb08a3eb845
+
+- name: root-dir-links | Update links in root directory to be relative
+  ansible.builtin.include_tasks: remediation/root-dir-links.yml
+  vars:
+    entry_key: 3d895ad37cea4157b864d439ed6b6bd75562061f
+
+- name: fstab-duplicates-overshadow | Update /etc/fstab to remove overshadow and duplicate entries
+  ansible.builtin.include_tasks: remediation/fstab-duplicates-overshadow.yml
+  vars:
+    entry_key: fbb78588331fe656352ec13c2a1cb8e6a544fc
+
+- name: unmount-btrfs | Unmount BTRFS shares
+  ansible.builtin.include_tasks: remediation/unmount-btrfs.yml
+  vars:
+    entry_key: 196e2adc90782f4deb3cc0ce1367c7a8ad21f34
+
+- name: unmount-nfs | Unmount NFS shares
+  ansible.builtin.include_tasks: remediation/unmount-nfs.yml
+  vars:
+    entry_key: 9881b25faceeeaa7a6478bcdac29afa7f5baaaed
+
+- name: unmount-cifs | Unmount CIFS shares
+  ansible.builtin.include_tasks: remediation/unmount-cifs.yml
+  vars:
+    entry_key: de1aa3c7c4fca55ebdcbea2747ff46ad6af24

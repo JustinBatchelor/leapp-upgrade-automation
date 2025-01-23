@@ -1,0 +1,23 @@
+---
+- name: root-dir-links | Set leapp-entry if leapp-report contains this inhibitor
+  ansible.builtin.set_fact:
+    leapp_entry: "{{ item }}"
+  loop: "{{ leapp_report._json.entries }}"
+  when: item.key == entry_key
+
+- block:
+    - name: root-dir-links | Set fact to capture the suggested command to remediate the inhibitor
+      ansible.builtin.set_fact:
+        command_list: "{{ leapp_entry.detail.remediations[0].context }}"
+
+    - name: root-dir-links | Set fact to format the remediation command
+      ansible.builtin.set_fact:
+        command: "{{ command_list[0] }} {{ command_list[1] }} {{ command_list[2] }}"
+
+    - name: root-dir-links | Run leapp remediation command
+      ansible.builtin.command: "{{ command }}"
+
+  when:
+    - leapp_entry is defined
+    - leapp_entry.key == entry_key
+    - ansible_fqdn == leapp_entry.hostname

@@ -1,0 +1,23 @@
+---
+- name: Play to create a leapp preupgrade report for RHEL7 hosts
+  hosts: "{{ inventory_host_group | default('analysis') }}"
+  strategy: free
+  gather_facts: true
+  become: true
+  force_handlers: true
+  vars_files:
+    - "../variables/infra-leapp.yml"
+  tasks:
+    - name: Set fact to represent OS version | {{ ansible_facts.hostname }}
+      ansible.builtin.set_fact:
+        analysis: "{{ ansible_facts.distribution == 'RedHat' and ansible_facts.distribution_version == '7.9' }}"
+
+    - name: Include role to configure preflight-checks | {{ ansible_facts.hostname }}
+      ansible.builtin.include_role:
+        name: roles/preflight-checks
+      when: analysis
+
+    - name: Generate preupgrade analysis report | {{ ansible_facts.hostname }}
+      ansible.builtin.import_role:
+        name: infra.leapp.analysis
+      when: analysis

@@ -1,0 +1,18 @@
+---
+- name: leapp_ssh_permitRootLogin
+  ansible.builtin.set_fact:
+    leapp_entry: "{{ item }}"
+  loop: "{{ leapp_report_json.entries }}"
+  when: item.key == entry_key
+
+- block:
+    - name: change permit root login
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^(#\\s*)?PermitRootLogin'
+        line: "PermitRootLogin prohibit-password"
+        state: present
+  when:
+    - leapp_entry is defined
+    - leapp_entry.key == entry_key
+    - ansible_fqdn == leapp_entry.hostname

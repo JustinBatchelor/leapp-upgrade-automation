@@ -1,0 +1,10 @@
+---
+- name: Ensure that /etc/ansible/facts.d/ exists
+  ansible.builtin.file:
+    path: "/etc/ansible/facts.d/"
+    state: directory
+
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: "{{ ripu_backup_folder }}"
+    state: directory

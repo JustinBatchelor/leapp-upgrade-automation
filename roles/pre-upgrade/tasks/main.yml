@@ -1,0 +1,19 @@
+---
+# tasks file for pre-upgrade
+- name: pre-upgrade | Ensure directories needed for RIPU are created
+  ansible.builtin.include_tasks: create-ripu-dirs.yml
+
+- name: pre-upgrade | Ensure MAKEDEBUG kernel setting is set to no
+  ansible.builtin.include_tasks: kernel-makedebug.yml
+
+- name: pre-upgrade | Check for proxy configurations in /etc/yum.conf
+  ansible.builtin.include_tasks: yum-proxy.yml
+
+- name: pre-upgrade | Rename /etc/login.defs if it exists
+  ansible.builtin.include_tasks: rename-etc-login.yml
+
+- name: pre-upgrade | Remove packages
+  ansible.builtin.include_tasks: remove-packages.yml
+
+- name: pre-upgrade | Ensure packages are updated
+  ansible.builtin.include_tasks: update-packages.yml

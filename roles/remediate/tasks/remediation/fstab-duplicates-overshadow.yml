@@ -1,0 +1,59 @@
+---
+- name: fstab-duplicates-overshadow | Set leapp-entry if leapp-report contains this inhibitor
+  ansible.builtin.set_fact:
+    leapp_entry: "{{ item }}"
+  loop: "{{ leapp_report._json.entries }}"
+  when: item.key == entry_key
+
+- block:
+    - name: Read /etc/fstab content
+      ansible.builtin.slurp:
+        path: /etc/fstab
+      register: fstab_content
+
+    - name: Parse fstab_content
+      ansible.builtin.set_fact:
+        fstab_lines: "{{ fstab_content.content | b64decode | split('\n') }}"
+
+    - name: Find all valid entries
+      ansible.builtin.set_fact:
+        fstab_entries: "{{ fstab_lines | select('match', '^[^#\\s]') | list }}"
+
+    - name: Filter for unique entries in /etc/fstab
+      ansible.builtin.set_fact:
+        unique_fstab_entries: "{{ fstab_entries | unique }}"
+
+    - name: Create dictionary with count of slashes
+      ansible.builtin.set_fact:
+        fstab_dict: "{{ fstab_dict | default({}) | combine({ item: item.split()[1].count('/') }) }}"
+      loop: "{{ unique_fstab_entries }}"
+
+    - name: Sort fstab dictionary by the count of slashes in target mount
+      ansible.builtin.set_fact:
+        sorted_fstab_list: >
+          {{ fstab_dict | dict2items | sort(attribute='value') | map(attribute='key') | list }}
+
+    - name: Init an empty dictionary for the next task
+      ansible.builtin.set_fact:
+        dup_mounts: {}
+
+    - name: Update dictionary with count of duplicate target mounts
+      ansible.builtin.set_fact:
+        dup_mounts: "{{ dup_mounts | combine({ item.split()[1]: (dup_mounts.get(item.split()[1], 0) + 1) }) }}"
+      loop: "{{ sorted_fstab_list }}"
+
+    - name: Comment out entries that target a duplicate mount point
+      ansible.builtin.set_fact:
+        updated_fstab_entries: "{{ updated_fstab_entries | default([]) + [updated_entry] }}"
+      loop: "{{ sorted_fstab_list }}"
+      vars:
+        updated_entry: "{{ '#' + item if dup_mounts[item.split()[1]] > 1 else item }}"
+
+    - name: Write sorted entries to /etc/fstab
+      ansible.builtin.copy:
+        dest: /etc/fstab
+        content: "{{ updated_fstab_entries | join('\n') + '\n' }}"
+      when:
+        - leapp_entry is defined
+        - leapp_entry.key == entry_key
+        - ansible_fqdn == leapp_entry.hostname

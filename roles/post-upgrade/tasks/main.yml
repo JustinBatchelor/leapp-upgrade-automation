@@ -1,0 +1,6 @@
+# Tasks file for post-upgrade
+- name: Include tasks to restore and remount NFS shares
+  ansible.builtin.include_tasks: fstab.yml
+
+- name: Include tasks to update / remove / install packages
+  ansible.builtin.include_tasks: packages.yml

@@ -1,0 +1,44 @@
+---
+- name: Check if /etc/yum.conf exists
+  ansible.builtin.stat:
+    path: /etc/yum.conf
+  register: yum_config
+
+- name: Read proxy line if it exists
+  ansible.builtin.shell: 'grep "^proxy=" /etc/yum.conf'
+  ignore_errors: true
+  register: proxy_line
+  when: yum_config.stat.exists
+
+- name: Set proxy variable based on command output
+  ansible.builtin.set_fact:
+    proxy_value: "{{ proxy_line.stdout.split('=')[1] }}"
+  when:
+    - proxy_line is defined
+    - proxy_line.stdout is defined
+    - proxy_line.stdout != ""
+
+- debug:
+    msg: "{{ proxy_value }}"
+  when: proxy_value is defined
+
+# If proxy_value is defined, then we need to:
+# 1. Update the /etc/dnf/dnf.conf to include the proxy line found in /etc/yum.conf
+# 2. Copy the /etc/dnf/dnf.conf to /etc/leapp/files/dnf.conf
+
+- block:
+    - name: Ensure the proxy configuration exists in /etc/dnf/dnf.conf
+      ansible.builtin.lineinfile:
+        path: /etc/dnf/dnf.conf
+        line: "proxy={{ proxy_value }}"
+        state: present
+
+    - name: Copy /etc/dnf/dnf.conf to /etc/leapp/files/dnf.conf
+      ansible.builtin.copy:
+        remote_src: true
+        src: /etc/dnf/dnf.conf
+        dest: /etc/leapp/files/dnf.conf
+        owner: root
+        group: root
+        mode: '0644'
+  when: proxy_value is defined

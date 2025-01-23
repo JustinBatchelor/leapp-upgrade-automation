@@ -1,0 +1,96 @@
+### analysis ###
+# specify the names of the current repos on a machine defined within the inventory
+analysis_repos_el7: []
+
+### analysis | upgrade ###
+# change the upgrade type that the infra.leapp collection will use
+# leapp_upgrade_type: cdn
+# leapp_upgrade_type: rhui
+# leapp_upgrade_type: custom
+leapp_upgrade_type: custom
+
+# For leapp_upgrade_type == "custom"
+# Used to generate /etc/leapp/files/leapp_upgrade_repositories.repo
+local_repos_leapp: []
+
+### analysis ###
+# if defined, this is written to /var/log/leapp/answerfile before generating the pre-upgrade report
+leapp_answerfile: |
+  [remove_pam_pkcs11_module_check]
+  confirm = True
+  [authselect_check]
+  confirm = True
+
+### Analysis ###
+# Optional string to define command line options to be passed to the leapp command when running the upgrade
+leapp_preupg_opts: --target 8.10 --no-rhsm
+
+### Upgrade ###
+# Optional string to define command line options to be passed to the leapp command when running the upgrade
+leapp_upgrade_opts: --target 8.10 --no-rhsm --nogpgcheck
+
+### Analysis | Upgrade ###
+# List of keys of known inhibitors, ignored when setting upgrade_inhibited and leapp_inhibitors in analysis or parse_leapp_report
+leapp_known_inhibitors:
+  - 68a67da90295edefaf45c2699faedec2eb67c5b     # Unsupported kernel module pata_acpi, floppy
+  - 3d21ebccde1c00de60420de7716165787299515f    # sshd config PermitRootLogin directive
+  - 8cea2a1afbbb1232967482c27212b2150985b256    # Multiple devel kernels installed
+  - ebb67acfa548e2f82a8c97ba510eb40e6e04117     # Newest installed kernel not in use
+  - 9881b25faceceaa7ace7abcdac29afd75baaaed     # Use of NFS detected. Upgrade can't proceed
+  - 0fa7bea4331fee5635aec11c2a1cb1e55cfacdfc    # Detected incorrect order of entries or duplicate entries in /etc/fstab
+  - 43050d265759279ce895e64f45e9c56019632053    # Detected multiple physical network interfaces where one or more use kernel naming (e.g., eth0)
+  - 2eaeb12ac922622cfbbeeeda123deab05a38eb45    # Multiple debug kernels installed
+  - 3d89sad37ceaf4157854d439edb6bd75562061fa    # Upgrade requires links in root directory to be relative
+  - 196e2aadc90782fadeccbe1367c7abdd2112f33     # Btrfs has been removed from RHEL8
+  - d0e7aa3f7cafcba50bdcba27a7ffa5d6af3da5fa    # Use of CIFS detected. Upgrade can't proceed
+
+### Upgrade ###
+# List of kernel modules to be unloaded prior to running leapp upgrade
+kernel_modules_to_unload_before_upgrade:
+  - pata_acpi  # Inhibitor: 68a67da002984defaf45c2609faedec2eb67c5b
+  - floppy     # Inhibitor: fe8a67da002984defaf45c2609faedec2eb67c5b
+  - btrfs      # Inhibitor: 1962aadc90872fadedccbe1367c7abdd2112f33
+
+### Upgrade Options ###
+# When false, allows for running remediation and going straight to upgrade without re-running analysis.
+# When true, all inhibitors must be accounted for by the 'known_inhibitors' variable, 
+# otherwise, the leapp upgrade will fail due to an unremediated inhibitor.
+check_leapp_analysis_results: true
+
+### SELinux Mode ###
+# Desired SELinux mode to be set after the OS upgrade
+# Options: enforcing, permissive, disabled
+selinux_mode: enforcing
+
+### System Roles ###
+# Defines which collection to import the crypto policies role
+# Options: fedora.linux_system_roles (default), redhat.rhel_system_roles
+infra_leapp_upgrade_system_roles_collection: fedora.linux_system_roles
+
+### Reboot Options ###
+post_reboot_delay: 120
+reboot_timeout: 7200
+
+### Post Upgrade ###
+# Boolean to decide if after the upgrade a DNF update will run
+post_upgrade_update: false
+
+### Parse Leapp Report ###
+# The path used and the prefix name setting for the leapp report
+result_filename_prefix: "/var/log/leapp/leapp-report"
+
+# Path of the leapp pre-upgrade report file
+result_filename: "{{ result_filename_prefix }}.txt"
+
+# JSON filename using the selected "result_filename_prefix"
+result_filename_json: "{{ result_filename_prefix }}.json"
+
+### Backup Configuration ###
+# Directory path for all files during the upgrade
+ripu_backup_folder: "/root/ripu_backup/"
+
+# File path for fstab
+fstab_backup_path: "{{ ripu_backup_folder }}fstab.bak"
+
+# File path for EL8 opt-out
+leapp_opt_out_path: "{{ ripu_backup_folder }}EL8_OPT_OUT_DO_NOT_DELETE"

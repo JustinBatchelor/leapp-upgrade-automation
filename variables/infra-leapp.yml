@@ -38,7 +38,6 @@ leapp_known_inhibitors:
   - ebb67acfa548e2f82a8c97ba510eb40e6e04117     # Newest installed kernel not in use
   - 9881b25faceceaa7ace7abcdac29afd75baaaed     # Use of NFS detected. Upgrade can't proceed
   - 0fa7bea4331fee5635aec11c2a1cb1e55cfacdfc    # Detected incorrect order of entries or duplicate entries in /etc/fstab
-  - 43050d265759279ce895e64f45e9c56019632053    # Detected multiple physical network interfaces where one or more use kernel naming (e.g., eth0)
   - 2eaeb12ac922622cfbbeeeda123deab05a38eb45    # Multiple debug kernels installed
   - 3d89sad37ceaf4157854d439edb6bd75562061fa    # Upgrade requires links in root directory to be relative
   - 196e2aadc90782fadeccbe1367c7abdd2112f33     # Btrfs has been removed from RHEL8
